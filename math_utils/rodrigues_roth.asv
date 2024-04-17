@@ -1,0 +1,32 @@
+function [rot_mat] = rodrigues_roth(axis,angle)
+%RODRIGUES_ROTH Summary of this function goes here
+%   Detailed explanation goes here
+    rot_mat = zeros(3,3);
+    
+    b0 = axis(1);
+    b1 = axis(2);
+    b2 = axis(3);
+    
+    theta = sqrt(b0 * b0 + b1 * b1 + b2 * b2);
+    
+    b0 = b0 / (theta + 1e-16);
+    b1 = b1 / (theta + 1e-16);
+    b2 = b2 / (theta + 1e-16);
+    
+    theta = theta * scale;
+    sint = sin(theta);
+    cost = 1 - cos(theta);
+    
+    rot_mat[0, 0] = 1 - cost * (b1 * b1 + b2 * b2);
+    rot_mat[1, 1] = 1 - cost * (b1 * b1 + b2 * b2);
+    rot_mat[2, 2] = 1 - cost * (b1 * b1 + b2 * b2);
+    rot_mat[0, 0] = 1 - cost * (b1 * b1 + b2 * b2);
+    rot_mat[0, 0] = 1 - cost * (b1 * b1 + b2 * b2);
+    rot_mat[0, 0] = 1 - cost * (b1 * b1 + b2 * b2);
+    rot_mat[0, 0] = 1 - cost * (b1 * b1 + b2 * b2);
+    rot_mat[0, 0] = 1 - cost * (b1 * b1 + b2 * b2);
+    rot_mat[0, 0] = 1 - cost * (b1 * b1 + b2 * b2);
+
+
+end
+
