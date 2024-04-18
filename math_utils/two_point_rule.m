@@ -9,9 +9,9 @@ function out = two_point_rule(vecs, ghost_idx)
 %   result - 2D (dim, blocksize-1) array containing data with 'float' type.
 
     [dim, blocksize] = size(vecs);
-    if ~isempty(ghost_idx)
-        vecs(:,ghost_idx) = zeros(dim,1);
-    end
+    % if ~isempty(ghost_idx)
+    %     vecs(:,ghost_idx) = zeros(dim,1);
+    % end
     % Get the block size from the second dimension
     blocksize = size(vecs, 2);
     temp_collection = zeros(3, blocksize + 1);  % Using zeros to initialize, equivalent to empty in context

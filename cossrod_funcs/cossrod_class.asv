@@ -187,9 +187,9 @@ classdef cossrod_class
         
             % (J \omega_L / e^2) . (de/dt)
             unsteadyDilatation = JOmegaUponE .* obj.dilatation_rate ./ (obj.dilatations + 1e-14);
-            last_idx = size(obj.internal_torques, 2);
-            obj.internal_torques = bend_twist_couple_2D[:, 1:last_idx] + bend_twist_couple_3D[:, 1:last_idx] ...
-                + shear_stretch_couple[:, 1:last_idx] + lagrangianTransport[:, 1:last_idx] + unsteadyDilatation;
+
+            obj.internal_torques = bend_twist_couple_2D + bend_twist_couple_3D ...
+                + shear_stretch_couple + lagrangianTransport + unsteadyDilatation;
         end
 
         function obj = compute_internal_forces_and_torques(obj)
@@ -200,16 +200,28 @@ classdef cossrod_class
         end
 
         function obj = update_acceleration(obj)
-            obj.acc_vects = (obj.internal_forces + obj.external_forces) ./ obj.masses;
-            obj.ang_acc_vects(:) = 0;
-        
-            % Update angular accelerations
+            blocksize_acc = size(obj.internal_forces, 2);
+            blocksize_alpha = size(obj.internal_torques, 2);
+            
+            % Calculate accelerations
+            for i = 1:3
+                for k = 1:blocksize_acc
+                    obj.acc_vects(i, k) = ...
+                        (obj.internal_forces(i, k) + obj.external_forces(i, k)) / obj.masses(k);
+                end
+            end
+            
+            % Initialize alpha_collection to zero
+            obj.ang_acc_vects = zeros(size(obj.ang_acc_vects));
+            
+            % Calculate angular accelerations (alpha)
             for i = 1:3
                 for j = 1:3
-                    obj.ang_acc_vects(i, :) = obj.ang_acc_vects(i, :) + ...
-                        obj.inv_mass_second_moment_of_inertia(i, j, :) .*...
-                        (obj.internal_torques(j, :) + obj.external_torques(j, :))...
-                        .* obj.dilatations;
+                    for k = 1:blocksize_alpha
+                        obj.ang_acc_vects(i, k) = obj.ang_acc_vects(i, k) + ...
+                            (obj.inv_mass_second_moment_of_inertia(i, j, k) * ...
+                            (obj.internal_torques(j, k) + obj.external_torques(j, k))) * obj.dilatations(k);
+                    end
                 end
             end
         end

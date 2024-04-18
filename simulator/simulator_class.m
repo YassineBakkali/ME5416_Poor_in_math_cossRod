@@ -20,12 +20,12 @@ classdef simulator_class
         end
 
         function obj = update_internal_forces_and_torques(obj)
-            obj.rod.compute_internal_forces_and_torques();
+            obj.rod = obj.rod.compute_internal_forces_and_torques();
         end
 
-        function dynamic_rates = dynamic_rates(obj, prefac)
-            obj.rod.update_acceleration();
-            obj.dyna_states.dvdt_dwdt_vecs = permute(cat(3,obj.rod.acc_vects(:,1:obj.rod.nElems), obj.rod.ang_acc_vects), [3, 1, 2]);
+        function [dynamic_rates, obj] = dynamic_rates(obj, prefac)
+            obj.rod = obj.rod.update_acceleration();
+            obj.dyna_states.dvdt_dwdt_vecs = permute(cat(3,obj.rod.acc_vects(:,1:obj.rod.nElems+1), [obj.rod.ang_acc_vects,[0;0;0]]), [3, 1, 2]);
             dynamic_rates = obj.dyna_states.dynamic_rates(prefac);
         end
 
@@ -37,9 +37,13 @@ classdef simulator_class
         
         dt = final_time / n_steps;
         time = 0.0;
+        obj.rod.pos_vects(:,1) = zeros(3,1); 
+        obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
+        obj.rod.vel_vects(:,1) = zeros(3,1);
+        obj.rod.omega_vects(:,1) = zeros(3,1);
 
         for i = 1:n_steps
-            time = obj.sim_step(time, dt);
+            [time, obj] = obj.sim_step(time, dt);
         end
 
         fprintf(' Simulation time is %.6f\n', time);
@@ -61,20 +65,34 @@ classdef simulator_class
         end
 
         function obj = dynamic_step(obj, dt)
-            temp = obj.dynamic_rates(dt);
+            [temp, obj] = obj.dynamic_rates(dt);
             obj.dyna_states.rate_vecs = update_dynamics(obj.dyna_states.rate_vecs, temp);
-            obj.dyna_states.velocity_vecs = obj.dyna_states.rate_vecs(1,:,:);
-            obj.dyna_states.omega_vecs = obj.dyna_states.rate_vecs(2,:,:);
+            obj.dyna_states.velocity_vecs = squeeze(obj.dyna_states.rate_vecs(1,:,1:end));
+            obj.dyna_states.omega_vecs = squeeze(obj.dyna_states.rate_vecs(2,:,1:end-1));
             obj.rod.vel_vects = obj.dyna_states.velocity_vecs;
             obj.rod.omega_vects = obj.dyna_states.omega_vecs;
         end
 
-        function time = sim_step(obj, time, dt)
-            obj.kinematic_step(time, dt);
+        function [time, obj] = sim_step(obj, time, dt)
+            obj = obj.kinematic_step(time, dt);
             time = time + obj.prefac(dt);
-            obj.update_internal_forces_and_torques();
-            obj.dynamic_step(dt);
-            obj.kinematic_step(time, dt);
+            obj.rod.pos_vects(:,1) = zeros(3,1);
+            obj.kine_states.pos_vecs(:,1) = zeros(3,1);
+            obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
+            obj.kine_states.dir_vecs(:,:,1) = zeros(3,3);
+            obj = obj.update_internal_forces_and_torques();
+            obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;-60];
+            obj = obj.dynamic_step(dt);
+            obj.rod.vel_vects(:,1) = zeros(3,1);
+            obj.dyna_states.velocity_vecs(:,1) = zeros(3,1);
+            obj.rod.omega_vects(:,1) = zeros(3,1);
+            obj.dyna_states.omega_vecs = zeros(3,1);
+            obj = obj.kinematic_step(time, dt);
+            obj.rod.pos_vects(:,1) = zeros(3,1);
+            obj.kine_states.pos_vecs(:,1) = zeros(3,1);
+            obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
+            obj.kine_states.dir_vecs(:,:,1) = zeros(3,3);
+            obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;0];
             time = time + obj.prefac(dt);
         end
     end

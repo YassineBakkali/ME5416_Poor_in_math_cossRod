@@ -29,10 +29,7 @@ rho = 2000;           % Density of rubber        [kg/m^3]
 
 
 params = init_rod(nElements, direction, normal, L, r0, rho, E0, start, G0, [], [], [], []);
-dl = L / nElements;
-dt = dl * 0.05;
-final_time = 10;
-total_steps = final_time / dt;
+
 coss_rod = cossrod_class(params);
 simu = simulator_class(coss_rod);
-simu = simu.integrate(final_time,total_steps);
+simu = simu.integrate(10,10000);
