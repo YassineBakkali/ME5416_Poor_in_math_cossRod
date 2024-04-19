@@ -79,9 +79,10 @@ classdef simulator_class
             obj.rod.pos_vects(:,1) = zeros(3,1);
             obj.kine_states.pos_vecs(:,1) = zeros(3,1);
             obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
-            obj.kine_states.dir_vecs(:,:,1) = zeros(3,3);
+            obj.kine_states.dir_vecs(:,:,1) = [0,1,0;0,0,1;1,0,0];
             obj = obj.update_internal_forces_and_torques();
             obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;-60];
+            obj.rod.external_forces(:,obj.rod.nElems/2) = [0;60;120];
             obj = obj.dynamic_step(dt);
             obj.rod.vel_vects(:,1) = zeros(3,1);
             obj.dyna_states.velocity_vecs(:,1) = zeros(3,1);
@@ -91,8 +92,9 @@ classdef simulator_class
             obj.rod.pos_vects(:,1) = zeros(3,1);
             obj.kine_states.pos_vecs(:,1) = zeros(3,1);
             obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
-            obj.kine_states.dir_vecs(:,:,1) = zeros(3,3);
+            obj.kine_states.dir_vecs(:,:,1) = [0,1,0;0,0,1;1,0,0];
             obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;0];
+            obj.rod.external_forces(:,obj.rod.nElems/2) = [0;0;0];
             time = time + obj.prefac(dt);
         end
     end
