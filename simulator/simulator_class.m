@@ -64,7 +64,7 @@ classdef simulator_class
         obj.rod.vel_vects(:,1) = zeros(3,1);
         obj.rod.omega_vects(:,1) = zeros(3,1);
         obj.pos_records = zeros(n_steps, 3, obj.rod.nElems+1);
-
+        figure;
         for i = 1:n_steps
             [time, obj] = obj.sim_step(time, dt);
             obj.pos_records(i,:,:) = obj.rod.pos_vects;
@@ -116,6 +116,7 @@ classdef simulator_class
             obj.dyna_states.omega_vecs = obj.rod.omega_vects;
             obj.dyna_states.rate_vecs = permute(cat(3, obj.dyna_states.velocity_vecs, [obj.dyna_states.omega_vecs,[0;0;0]]),[3, 1, 2]);
             obj = obj.dynamic_step(dt);
+            obj.simulate();
             obj.rod.vel_vects(:,1) = zeros(3,1);
             obj.dyna_states.velocity_vecs(:,1) = zeros(3,1);
             obj.rod.omega_vects(:,1) = zeros(3,1);
@@ -128,6 +129,27 @@ classdef simulator_class
 
             obj.rod.external_forces = zeros(3,obj.rod.nElems+1);
             time = time + obj.prefac(dt);
+        end
+        
+        function simulate(obj)
+            x = obj.rod.pos_vects(1, :);  % X coordinates
+            y = obj.rod.pos_vects(2, :);  % Y coordinates
+            z = obj.rod.pos_vects(3, :);  % Z coordinates
+
+            plot3(x, y, z, 'LineWidth', 2);
+
+            % Adding labels and title for clarity
+            xlabel('X Axis');
+            ylabel('Y Axis');
+            zlabel('Z Axis');
+            title('3D Visualization of the Rod Centerline');
+            axis equal;
+            axis([0 2 -1 1 -1 1]);
+            % Add grid for better visualization
+            grid on;
+            drawnow;
+            % Optionally, set the aspect ratio to equal to ensure all axes are scaled equally
+            
         end
 
         function obj  = get_external_forces(obj)

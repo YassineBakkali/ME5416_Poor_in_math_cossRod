@@ -38,26 +38,3 @@ total_steps = final_time / dt;
 coss_rod = cossrod_class(params);
 simu = simulator_class(coss_rod, damping_cte, dt);
 simu = simu.integrate(final_time,total_steps);
-
-% Assume obj.rod.pos_vects is your 3xn matrix where each column is [x; y; z]
-x = simu.rod.pos_vects(1, :);  % X coordinates
-y = simu.rod.pos_vects(2, :);  % Y coordinates
-z = simu.rod.pos_vects(3, :);  % Z coordinates
-
-% Create a new figure
-figure;
-
-% Plot the 3D line
-plot3(x, y, z, 'LineWidth', 2);
-
-% Adding labels and title for clarity
-xlabel('X Axis');
-ylabel('Y Axis');
-zlabel('Z Axis');
-title('3D Visualization of the Rod Centerline');
-
-% Add grid for better visualization
-grid on;
-
-% Optionally, set the aspect ratio to equal to ensure all axes are scaled equally
-axis equal;
