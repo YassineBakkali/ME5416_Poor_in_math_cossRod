@@ -78,10 +78,10 @@ classdef simulator_class
             time = time + obj.prefac(dt);
             obj.rod.pos_vects(:,1) = zeros(3,1);
             obj.kine_states.pos_vecs(:,1) = zeros(3,1);
-            obj.rod.dir_vects(:,:,1) = zeros(3,3);
-            obj.kine_states.dir_vecs(:,:,1) = zeros(3,3);
+            obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
+            obj.kine_states.dir_vecs(:,:,1) = [0,1,0;0,0,1;1,0,0];
             obj = obj.update_internal_forces_and_torques();
-            obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;-0.1];
+            obj = obj.get_external_forces();
             obj = obj.dynamic_step(dt);
             obj.rod.vel_vects(:,1) = zeros(3,1);
             obj.dyna_states.velocity_vecs(:,1) = zeros(3,1);
@@ -90,10 +90,30 @@ classdef simulator_class
             obj = obj.kinematic_step(time, dt);
             obj.rod.pos_vects(:,1) = zeros(3,1);
             obj.kine_states.pos_vecs(:,1) = zeros(3,1);
-            obj.rod.dir_vects(:,:,1) = zeros(3,3);
-            obj.kine_states.dir_vecs(:,:,1) = zeros(3,3);
-            obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;0];
+            obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
+            obj.kine_states.dir_vecs(:,:,1) = [0,1,0;0,0,1;1,0,0];
+            obj.rod.external_forces = zeros(3,obj.rod.nElems+1);
             time = time + obj.prefac(dt);
+        end
+
+        function obj  = get_external_forces(obj)
+            Cd = 0.2;
+            g  = 9.81;
+            for i = 2:obj.rod.nElems
+                velocity_norm = norm(obj.rod.vel_vects(: , i));
+                
+                if velocity_norm > 0
+                    drag_force = -0.5 * obj.rod.rho_medium(i) * Cd * pi*obj.rod.radius(i)^2 * velocity_norm^2 * (obj.rod.vel_vects(:, i) / velocity_norm); 
+                else
+                    drag_force = 0;
+                end
+                   
+                % buoyant_force = [0; 0; obj.rod.rho_medium(i)' .* g * pi*obj.rod.radius(i).^2 .* norm(obj.rod.pos_vects(:, i) - obj.rod.pos_vects(:, i-1))];
+                % gravitational_force = [0; 0; -obj.rod.rho_material(i)' .* g .* pi*obj.rod.radius(i).^2 * norm(obj.rod.pos_vects(:, i) - obj.rod.pos_vects(:, i-1))];
+                gravitational_force = zeros(3,1);
+                buoyant_force = zeros(3,1);
+                obj.rod.external_forces(:,i) = obj.rod.external_forces(:, i) + drag_force + buoyant_force + gravitational_force;
+            end
         end
     end
 end
@@ -102,7 +122,6 @@ function [out_pos, out_dir] = update_kinematics(prefac, pos_vecs,...
     dir_vecs, velocity_vecs, omega_vecs)
     % updating kinematics
     out_pos = pos_vecs + (prefac .* velocity_vecs);
-    disp(out_pos);
     rotation_matrix = rodrigues_roth(prefac * omega_vecs, 1.0);
     out_dir = batchMatMat(rotation_matrix, dir_vecs);
 end
