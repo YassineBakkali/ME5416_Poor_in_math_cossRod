@@ -1,4 +1,6 @@
+clc;
 clear all;
+close all;
 % Get the current working directory
 currentFolder = pwd;
 relativePath = fullfile(currentFolder, 'cossrod_funcs');
@@ -25,10 +27,10 @@ d = 0.02;             % Diameter of rod.         [m]
 A0 = pi * d^2 / 4;     % Area of cross section    [m^2]
 I0 = pi*(d^4)/64;      % Second moment of area    [m^4]
 J0 = I0 * 2;            % Polar moment of inertia  [m^4]
-rho = 2000;           % Density of rubber        [kg/m^3]  
+rho_material = 2000;           % Density of rubber        [kg/m^3]  
+rho_medium = 1000;      % Density of water          [kg/m^3]
 
-
-params = init_rod(nElements, direction, normal, L, r0, rho, E0, start, G0, [], [], [], []);
+params = init_rod(nElements, direction, normal, L, r0, rho_material, rho_medium, E0, start, G0, [], [], [], []);
 dl = L / nElements;
 dt = dl * 0.05;
 final_time = 1;

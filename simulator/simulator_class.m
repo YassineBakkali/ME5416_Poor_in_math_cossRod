@@ -81,8 +81,7 @@ classdef simulator_class
             obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
             obj.kine_states.dir_vecs(:,:,1) = [0,1,0;0,0,1;1,0,0];
             obj = obj.update_internal_forces_and_torques();
-            obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;-60];
-            obj.rod.external_forces(:,obj.rod.nElems/2) = [0;60;120];
+            obj = obj.get_external_forces();
             obj = obj.dynamic_step(dt);
             obj.rod.vel_vects(:,1) = zeros(3,1);
             obj.dyna_states.velocity_vecs(:,1) = zeros(3,1);
@@ -93,9 +92,25 @@ classdef simulator_class
             obj.kine_states.pos_vecs(:,1) = zeros(3,1);
             obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
             obj.kine_states.dir_vecs(:,:,1) = [0,1,0;0,0,1;1,0,0];
-            obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;0];
-            obj.rod.external_forces(:,obj.rod.nElems/2) = [0;0;0];
+            obj.rod.external_forces = zeros(3,obj.rod.nElems+1);
             time = time + obj.prefac(dt);
+        end
+
+        function obj  = get_external_forces(obj)
+            Cd = 0.2;
+            g  = 9.81;
+            for i = 2:obj.rod.nElems
+                velocity_norm = norm(obj.rod.vel_vects(: , i));
+                
+                if velocity_norm > 0
+                    drag_force = -0.5 * obj.rod.rho_medium(i) * Cd * pi*obj.rod.radius(i)^2 * velocity_norm^2 * (obj.rod.vel_vects(:, i) / velocity_norm); 
+                else
+                    drag_force = 0;
+                end  
+                buoyant_force = [0; 0; obj.rod.rho_medium(i)' .* g * pi*obj.rod.radius(i).^2 .* norm(obj.rod.pos_vects(:, i) - obj.rod.pos_vects(:, i-1))];
+                gravitational_force = [0; 0; -obj.rod.rho_material(i)' .* g .* pi*obj.rod.radius(i).^2 * norm(obj.rod.pos_vects(:, i) - obj.rod.pos_vects(:, i-1))];
+                obj.rod.external_forces(:,i) = obj.rod.external_forces(:, i) + drag_force + buoyant_force + gravitational_force;
+            end
         end
     end
 end

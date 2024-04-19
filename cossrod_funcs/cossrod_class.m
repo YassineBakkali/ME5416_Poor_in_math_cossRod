@@ -7,6 +7,8 @@ classdef cossrod_class
         lengths 
         volumes
         masses
+        rho_medium
+        rho_material
         rest_lengths
         dilatations
         dilatation_rate
@@ -73,6 +75,8 @@ classdef cossrod_class
                 obj.masses = params.mass;
                 obj.external_torques = params.externalTorques;
                 obj.rest_voronoi_lengths = params.restVoronoiLengths;
+                obj.rho_material = params.density;              %new
+                obj.rho_medium = params.density_medium;         %new
 
                 obj.update_shearStretch(obj.dir_vects, obj.pos_vects,...
                 obj.volumes, obj.rest_lengths, obj.rest_voronoi_lengths);
