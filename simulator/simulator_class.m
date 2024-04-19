@@ -7,16 +7,38 @@ classdef simulator_class
         kine_states
         dyna_states
         kinematic_rates
+        pos_records
+        damping_cte
+        tx_damp_coeff
+        rx_damp_coeff
     end
 
     methods
-        function obj = simulator_class(cosserat_rod)
+        function obj = simulator_class(cosserat_rod, damping_cte, dt)
         %SIMULATOR_CLASS Construct an instance of this class
         %   Detailed explanation goes here
         obj.rod = cosserat_rod;
         obj.kine_states = kine_state(obj.rod.pos_vects, obj.rod.dir_vects);
         obj.dyna_states = dyna_state(zeros(2,3,obj.rod.nElems+1), zeros(2,3,obj.rod.nElems+1), obj.rod.vel_vects, obj.rod.omega_vects);
         obj.kinematic_rates = obj.dyna_states.kinematic_rates();
+        obj.damping_cte = damping_cte;
+        obj.tx_damp_coeff = exp(-damping_cte*dt);
+
+        elem_mass = 0.5 * (obj.rod.masses(2:end) + obj.rod.masses(1:end-1));
+        elem_mass(1) = elem_mass(1) + 0.5 * obj.rod.masses(1);
+        elem_mass(end) = elem_mass(end) + 0.5 * obj.rod.masses(end);
+        
+        n = size(obj.rod.inv_mass_second_moment_of_inertia, 3); % Number of 3x3 matrices
+        diagonals = zeros(n, 3); % Preallocate a matrix to store the diagonals
+        
+        % Extract diagonals from each 3x3 slice
+        for k = 1:n
+            % Extract diagonal and store it in the corresponding row of 'diagonals'
+            diagonals(k, :) = diag(obj.rod.inv_mass_second_moment_of_inertia(:, :, k));
+        end
+
+        obj.rx_damp_coeff = exp(...
+                -damping_cte * dt * elem_mass' .* diagonals);
         end
 
         function obj = update_internal_forces_and_torques(obj)
@@ -41,9 +63,12 @@ classdef simulator_class
         obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
         obj.rod.vel_vects(:,1) = zeros(3,1);
         obj.rod.omega_vects(:,1) = zeros(3,1);
+        obj.pos_records = zeros(n_steps, 3, obj.rod.nElems+1);
 
         for i = 1:n_steps
             [time, obj] = obj.sim_step(time, dt);
+            obj.pos_records(i,:,:) = obj.rod.pos_vects;
+            % disp(time);
         end
 
         fprintf(' Simulation time is %.6f\n', time);
@@ -79,9 +104,14 @@ classdef simulator_class
             obj.rod.pos_vects(:,1) = zeros(3,1);
             obj.kine_states.pos_vecs(:,1) = zeros(3,1);
             obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
-            obj.kine_states.dir_vecs(:,:,1) = zeros(3,3);
+            obj.kine_states.dir_vecs(:,:,1) = [0,1,0;0,0,1;1,0,0];
             obj = obj.update_internal_forces_and_torques();
-            obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;-60];
+            obj.rod.external_forces(:, obj.rod.nElems+1) = [0;0;-100];
+            obj.rod.vel_vects = obj.rod.vel_vects .* obj.tx_damp_coeff;
+            obj.rod.omega_vects = obj.rod.omega_vects .* (obj.rx_damp_coeff' .^ obj.rod.dilatations);
+            obj.dyna_states.velocity_vecs = obj.rod.vel_vects;
+            obj.dyna_states.omega_vecs = obj.rod.omega_vects;
+            obj.dyna_states.rate_vecs = permute(cat(3, obj.dyna_states.velocity_vecs, [obj.dyna_states.omega_vecs,[0;0;0]]),[3, 1, 2]);
             obj = obj.dynamic_step(dt);
             obj.rod.vel_vects(:,1) = zeros(3,1);
             obj.dyna_states.velocity_vecs(:,1) = zeros(3,1);
@@ -91,7 +121,7 @@ classdef simulator_class
             obj.rod.pos_vects(:,1) = zeros(3,1);
             obj.kine_states.pos_vecs(:,1) = zeros(3,1);
             obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
-            obj.kine_states.dir_vecs(:,:,1) = zeros(3,3);
+            obj.kine_states.dir_vecs(:,:,1) = [0,1,0;0,0,1;1,0,0];
             obj.rod.external_forces(:,obj.rod.nElems+1) = [0;0;0];
             time = time + obj.prefac(dt);
         end
