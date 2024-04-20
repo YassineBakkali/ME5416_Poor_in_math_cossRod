@@ -35,10 +35,6 @@ classdef cossrod_class
         mass_second_moment_of_inertia
         inv_mass_second_moment_of_inertia
     end
-    
-    properties (Access = private)
-        HiddenValue % Private property
-    end
 
     methods
         % Constructor method
@@ -229,5 +225,31 @@ classdef cossrod_class
                 end
             end
         end
-    end
+
+        function trans_energy = get_translational_energy(obj)
+            vel_squared = sum(obj.vel_vects.^2, 1);
+            trans_energy = 0.5 * sum(obj.masses .* vel_squared); 
+        end
+
+        function rot_energy = get_rotational_energy(obj)
+             J_omega_upon_e = batchMatVec(obj.mass_second_moment_of_inertia, obj.omega_vects)...
+                 ./ obj.dilatations;
+             rot_energy = 0.5 * sum(sum(obj.omega_vects .* J_omega_upon_e, 1));
+        end
+
+        function bending_energy = get_bending_energy(obj)
+            kappa_diff = obj.kappa - obj.rest_kappa;
+            bending_intern_torques = batchMatVec(obj.bendMat, kappa_diff);
+            bending_energy = 0.5 * sum(sum(kappa_diff.* bending_intern_torques, 1)...
+                .* obj.rest_voronoi_lengths,2);
+        end
+
+        function bending_energy = get_shear_energy(obj)
+            sigma_diff = obj.sigma - obj.sigma_rest;
+            shear_intern_forces = batchMatVec(obj.shearMat, sigma_diff);
+            bending_energy = 0.5 * sum(sum(sigma_diff.* shear_intern_forces, 1)...
+                .* obj.rest_lengths,2);
+        end
+
+    end    
 end

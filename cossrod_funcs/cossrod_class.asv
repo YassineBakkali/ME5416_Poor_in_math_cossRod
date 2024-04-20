@@ -7,6 +7,8 @@ classdef cossrod_class
         lengths 
         volumes
         masses
+        rho_medium
+        rho_material
         rest_lengths
         dilatations
         dilatation_rate
@@ -73,6 +75,8 @@ classdef cossrod_class
                 obj.masses = params.mass;
                 obj.external_torques = params.externalTorques;
                 obj.rest_voronoi_lengths = params.restVoronoiLengths;
+                obj.rho_material = params.density;              %new
+                obj.rho_medium = params.density_medium;         %new
 
                 obj.update_shearStretch(obj.dir_vects, obj.pos_vects,...
                 obj.volumes, obj.rest_lengths, obj.rest_voronoi_lengths);
@@ -101,7 +105,7 @@ classdef cossrod_class
             %COMPUTE_DILATATIONS Summary of this function goes here
             %   Update the dilatations, voronoi lengths and voronoi dilatations
             
-            obj.compute_geom(pos_vect, volumes);
+            obj = obj.compute_geom(pos_vect, volumes);
             obj.dilatations = obj.lengths ./ rest_lengths;
             
             voronoi_lengths = (obj.lengths(1:end-1) + obj.lengths(2:end))/ 2;
@@ -113,24 +117,24 @@ classdef cossrod_class
             volumes, rest_lengths, rest_voronoi_lengths)
             %UPDATE_SHEARSTRETCH Summary of this function goes here
             %   Detailed explanation goes here
-            obj.compute_dilatations(pos_vect, volumes, rest_lengths, rest_voronoi_lengths);
+            obj = obj.compute_dilatations(pos_vect, volumes, rest_lengths, rest_voronoi_lengths);
             
             z_euler = [0; 0; 1];
             obj.sigma = obj.dilatations .* batchMatVec(dir_vects, obj.tangents) - z_euler;
         end
 
         function obj = update_internal_stresses(obj, dir_vects, pos_vects, volumes,...
-                rest_lengths, rest_voronoi_lengths, sigma, shearMat, sigma_rest)
-            obj.update_shearStretch(dir_vects, pos_vects,...
+                rest_lengths, rest_voronoi_lengths, shearMat, sigma_rest)
+            obj = obj.update_shearStretch(dir_vects, pos_vects,...
                 volumes, rest_lengths, rest_voronoi_lengths);
-            obj.internal_stress = batchMatVec(shearMat, sigma - sigma_rest);
+            obj.internal_stress = batchMatVec(shearMat, obj.sigma - sigma_rest);
         end
 
         function obj = compute_internal_forces(obj, dir_vects, pos_vects, volumes,...
-                rest_lengths, rest_voronoi_lengths, sigma, shearMat, sigma_rest)
+                rest_lengths, rest_voronoi_lengths, shearMat, sigma_rest)
 
-            obj.update_internal_stresses(dir_vects, pos_vects, volumes,...
-                rest_lengths, rest_voronoi_lengths, sigma, shearMat, sigma_rest)
+            obj = obj.update_internal_stresses(dir_vects, pos_vects, volumes,...
+                rest_lengths, rest_voronoi_lengths, shearMat, sigma_rest);
 
             blocksize = size(obj.internal_stress, 2);
             cosserat_internal_stress = zeros(3, blocksize);
@@ -151,7 +155,7 @@ classdef cossrod_class
             
             % Compute the internal forces using a kernel function
             % Assuming difference_kernel_for_block_structure and ghost_elems_idx are defined appropriately
-            obj.internal_forces = two_point_rule(cosserat_internal_stress, obj.nElems + 1);
+            obj.internal_forces = two_point_rule(cosserat_internal_stress, obj.nElems);
         end
         
 
@@ -161,7 +165,7 @@ classdef cossrod_class
         end
 
         function obj = compute_internal_bending_twist_strains_from_model(obj)
-            obj.compute_bending_twist_strains(obj.dir_vects, obj.rest_voronoi_lengths);
+            obj = obj.compute_bending_twist_strains(obj.dir_vects, obj.rest_voronoi_lengths);
             obj.internal_couple = batchMatVec(obj.bendMat, obj.kappa - obj.rest_kappa);
         end
 
@@ -169,12 +173,12 @@ classdef cossrod_class
             r_dot_v = sum(pos_vects .* vel_vects, 1);
             r_plus_one_dot_v = sum(pos_vects(:, 2:end) .* vel_vects(:, 1:end-1), 1);
             r_dot_v_plus_one = sum(pos_vects(:, 1:end-1) .* vel_vects(:, 2:end), 1);
-            obj.dilatation_rate = (r_dot_v(:,1:end-1) + r_dot_v(:,2:end) - r_dot_v_plus_one - r_plus_one_dot_v) ./ obj.lengths' ./ obj.rest_lengths;
+            obj.dilatation_rate = (r_dot_v(:,1:end-1) + r_dot_v(:,2:end) - r_dot_v_plus_one - r_plus_one_dot_v) ./ obj.lengths ./ obj.rest_lengths;
         end
 
         function obj = compute_internal_torques(obj)
-            obj.compute_internal_bending_twist_strains_from_model();
-            obj.compute_dilatation_rate(obj.pos_vects, obj.vel_vects);
+            obj = obj.compute_internal_bending_twist_strains_from_model();
+            obj = obj.compute_dilatation_rate(obj.pos_vects, obj.vel_vects);
             voronoi_dilatation_inv_cube_cached = 1.0 ./ (obj.voronoi_dilatations .^ 3 + 1e-14);
             bend_twist_couple_2D = two_point_rule(obj.internal_couple .* voronoi_dilatation_inv_cube_cached, []);
             temp = cross(obj.kappa, obj.internal_couple,1);
@@ -193,10 +197,10 @@ classdef cossrod_class
         end
 
         function obj = compute_internal_forces_and_torques(obj)
-            obj.compute_internal_forces(obj.dir_vects, obj.pos_vects, obj.volumes,...
-                obj.rest_lengths, obj.rest_voronoi_lengths, obj.sigma, obj.shearMat, obj.sigma_rest);
+            obj = obj.compute_internal_forces(obj.dir_vects, obj.pos_vects, obj.volumes,...
+                obj.rest_lengths, obj.rest_voronoi_lengths, obj.shearMat, obj.sigma_rest);
             
-            obj.compute_internal_torques();
+            obj = obj.compute_internal_torques();
         end
 
         function obj = update_acceleration(obj)
@@ -225,5 +229,25 @@ classdef cossrod_class
                 end
             end
         end
-    end
+
+        function trans_energy = get_translational_energy(obj)
+
+        end
+
+        function rot_energy = get_rotational_energy(obj)
+
+        end
+
+        function bending_energy = get_bending_energy(obj)
+            kappa_diff = obj.k
+        end
+
+        function bending_energy = get_shear_energy(obj)
+            sigma_diff = obj.sigma - obj.sigma_rest;
+            shear_intern_forces = batchMatVec(obj.shearMat, sigma_diff);
+            bending_energy = 0.5 * sum(sum(sigma_diff.* shear_intern_forces, 1)...
+                .* obj.rest_lengths,1);
+        end
+
+    end    
 end
