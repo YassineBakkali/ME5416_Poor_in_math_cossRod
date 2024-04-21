@@ -34,6 +34,7 @@ classdef cossrod_class
         omega_vects
         mass_second_moment_of_inertia
         inv_mass_second_moment_of_inertia
+        target_coordinates
     end
 
     methods
@@ -73,7 +74,8 @@ classdef cossrod_class
                 obj.rest_voronoi_lengths = params.restVoronoiLengths;
                 obj.rho_material = params.density;              %new
                 obj.rho_medium = params.density_medium;         %new
-
+                obj.target_coordinates = params.target_coordinates;
+                obj.get_optimal_deformation();
                 obj.update_shearStretch(obj.dir_vects, obj.pos_vects,...
                 obj.volumes, obj.rest_lengths, obj.rest_voronoi_lengths);
 
@@ -251,5 +253,61 @@ classdef cossrod_class
                 .* obj.rest_lengths,2);
         end
 
+        function obj = get_optimal_deformation(obj)
+            mu_tip = 0.1;
+            N = obj.nElems;
+            dx = 1/obj.nElems;
+            target_position = obj.target_coordinates;
+            lambda = zeros(3, N+1);
+            eta = 0.1;
+            w = zeros(3, N); 
+            q = obj.pos_vects;
+            % Placeholder for dynamics and gradients (to be implemented)
+            f = @(q, w) [w(1) * cos(q(3)) - w(2) * sin(q(3)); w(1) * sin(q(3)) + w(2) * cos(q(3)); w(3)];
+            H_gradient_w = @(q, lambda, w) [-lambda(1) * cos(q(3)) - lambda(2) * sin(q(3)); -lambda(1) * sin(q(3)) + lambda(2) * cos(q(3)); -lambda(3)];
+
+            % Forward-Backward Algorithm
+            MaxIter = 500; % Maximum number of iterations
+            for k = 1:MaxIter
+                % Forward pass (State update)
+                for i = 1:N
+                    q(:, i+1) = q(:, i) + dx  * f(q(:, i), w(:, i));
+                end
+
+                % Backward pass (Costate update)
+                lambda(:, N+1) = mu_tip * (q(1, N+1) - target_position); % Terminal condition
+                for i = N:-1:1
+                    lambda(:, i) = lambda(:, i+1) - dx * gradient_of_Hamiltonian(q(:, i), lambda(:, i+1), w(:, i)); % Update this function
+                end
+
+                % Update deformations
+                for i = 1:N
+                    grad_H = H_gradient_w(q(:, i), lambda(:, i), w(:, i));
+                    w(:, i) = w(:, i) + eta * grad_H;
+                end
+                disp(w)
+            end
+        end
+
     end    
+end
+
+function gradH = gradient_of_Hamiltonian(q, lambda, w)
+    L = @(q, w) 0.5 * (w(1)^2 + w(2)^2 + w(3)^2);
+    % Dynamics equations f
+    f = [w(1) * cos(q(3)) - w(2) * sin(q(3));
+         w(1) * sin(q(3)) + w(2) * cos(q(3));
+         w(3)];
+
+    % Calculate the derivative of L with respect to q
+    % Here we assume a dummy function for L for demonstration purposes
+    L_q = [0; 0; 0];  % Replace with actual derivatives if L is dependent on q
+
+    % Compute partial derivatives of f with respect to q analytically or numerically
+    df_dq = [ -w(1) * sin(q(3)) - w(2) * cos(q(3)), 0, w(1) * cos(q(3)) - w(2) * sin(q(3));
+               w(1) * cos(q(3)) - w(2) * sin(q(3)), 0, w(1) * sin(q(3)) + w(2) * cos(q(3));
+               0, 0, 1];  % Jacobian of f with respect to q
+
+    % Calculate the gradient of the Hamiltonian
+    gradH = df_dq' * lambda - L_q;  % Note the transpose on df_dq to match dimensions
 end

@@ -25,11 +25,12 @@ damping_cte = 1.0;
 E0 = 1e5;               % Young modulus of rubber. [N/m^2]
 nu = 0.48;              % Poisson ratio of rubber. [-]
 G0 = E0 / (2*(1 + nu)); % Shear modulus of rubber. [N/m^2]
-
 rho_material = 2000;    % Density of rubber        [kg/m^3]  
 rho_medium = 1000;      % Density of water          [kg/m^3]
 
-params = init_rod(nElements, direction, normal, L, r0, rho_material, rho_medium, E0, start, G0, [], [], [], []);
+target_coordinates = [1; 0; 1];
+
+params = init_rod(nElements, direction, normal, L, r0, rho_material, rho_medium, E0, start, G0, [], [], [], [], target_coordinates);
 dl = L / nElements;
 
 dt = dl*0.05;

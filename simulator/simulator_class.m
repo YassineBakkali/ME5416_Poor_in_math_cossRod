@@ -68,9 +68,9 @@ classdef simulator_class
         for i = 1:n_steps
             [time, obj] = obj.sim_step(time, dt);
             obj.pos_records(i,:,:) = obj.rod.pos_vects;
-        %     energy = obj.rod.get_translational_energy() + obj.rod.get_rotational_energy() + ...
-        %         + obj.rod.get_bending_energy() + obj.rod.get_shear_energy();
-        %     disp(energy);
+            energy = obj.rod.get_translational_energy() + obj.rod.get_rotational_energy() + ...
+                + obj.rod.get_bending_energy() + obj.rod.get_shear_energy();
+            disp(energy);
         end
 
         fprintf(' Simulation time is %.6f\n', time);
