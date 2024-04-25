@@ -63,11 +63,11 @@ classdef simulator_class
         obj.rod.dir_vects(:,:,1) = [0,1,0;0,0,1;1,0,0];
         obj.rod.vel_vects(:,1) = zeros(3,1);
         obj.rod.omega_vects(:,1) = zeros(3,1);
-        obj.pos_records = zeros(n_steps, 3, obj.rod.nElems+1);
+        % obj.pos_records = zeros(n_steps, 3, obj.rod.nElems+1);
 
         for i = 1:n_steps
             [time, obj] = obj.sim_step(time, dt);
-            obj.pos_records(i,:,:) = obj.rod.pos_vects;
+            % obj.pos_records(i,:,:) = obj.rod.pos_vects;
         %     energy = obj.rod.get_translational_energy() + obj.rod.get_rotational_energy() + ...
         %         + obj.rod.get_bending_energy() + obj.rod.get_shear_energy();
         %     disp(energy);
@@ -111,7 +111,7 @@ classdef simulator_class
 
             obj = obj.get_external_forces();
 
-            obj.rod.external_forces(:, obj.rod.nElems+1) = obj.rod.external_forces(:, obj.rod.nElems+1) + [0;0;-100];
+            obj.rod.external_forces(:, obj.rod.nElems+1) = obj.rod.external_forces(:, obj.rod.nElems+1);
             obj.rod.vel_vects = obj.rod.vel_vects .* obj.tx_damp_coeff;
             obj.rod.omega_vects = obj.rod.omega_vects .* (obj.rx_damp_coeff' .^ obj.rod.dilatations);
             obj.dyna_states.velocity_vecs = obj.rod.vel_vects;

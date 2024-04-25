@@ -1,5 +1,5 @@
 function params = init_rod(...
-    nElements, direction, normal, baseLength, baseRadius, density, density_medium, youngsModulus, ...
+    nElements, direction, normal, baseLength, baseRadius, endRadius, density, density_medium, youngsModulus, ...
     rodOriginPosition, shearModulus, position, directors, restSigma, restKappa)
     
     % Constants and initial sanity checks
@@ -38,7 +38,6 @@ function params = init_rod(...
         
         % Construct directors using tangents and normal
         normalCollection = repmat(normal, 1, nElements);  % Replicating the normal vector across columns
-        disp(normalCollection)
         % Check if rod normal and rod tangent are perpendicular to each other
         % Compute dot product across all elements to ensure perpendicularity
         dotProducts = sum(normalCollection .* tangents, 1);  % element-wise multiplication and sum over rows
@@ -54,7 +53,7 @@ function params = init_rod(...
     end
 
     % Set radius and density arrays
-    radius = repmat(baseRadius, nElements, 1);
+    radius = linspace(baseRadius, endRadius, nElements)';
     assert(all(radius > 1e-14), 'Radius must be greater than 0.');
     densityArray = repmat(density, nNodes, 1);
     assert(all(densityArray > 1e-14), 'Density must be greater than 0.');
