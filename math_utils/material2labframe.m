@@ -1,5 +1,4 @@
 function labFrameVects = material2labframe(dir_vects, vects)
-    % Get the size of the second dimension of vectors
     blocksize = size(vects, 2);
     
     % Initialize lab_frame_vectors with zeros

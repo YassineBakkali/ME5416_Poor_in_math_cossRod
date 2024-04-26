@@ -1,5 +1,6 @@
-classdef simulator_class 
-    %SIMULATOR_CLASS Implementation of the simulator loop 
+classdef simulator_class_muscles 
+    %SIMULATOR_CLASS Summary of this class goes here
+    %   Detailed explanation goes here
 
     properties
         rod
@@ -10,12 +11,16 @@ classdef simulator_class
         damping_cte
         tx_damp_coeff
         rx_damp_coeff
+        muscles
+        activations
     end
 
     methods
-        function obj = simulator_class(cosserat_rod, damping_cte, dt)
+        function obj = simulator_class_muscles(cosserat_rod, damping_cte, dt, muscles, activations)
 
             obj.rod = cosserat_rod;
+            obj.muscles = muscles;
+            obj.activations = activations;
             obj.kine_states = kine_state(obj.rod.pos_vects, obj.rod.dir_vects);
             obj.dyna_states = dyna_state(zeros(2,3,obj.rod.nElems+1), zeros(2,3,obj.rod.nElems+1), obj.rod.vel_vects, obj.rod.omega_vects);
             obj.kinematic_rates = obj.dyna_states.kinematic_rates();
@@ -47,7 +52,7 @@ classdef simulator_class
             dynamic_rates = obj.dyna_states.dynamic_rates(prefac);
         end
 
-        function obj = integrate(obj, final_time, n_steps)
+        function obj = integrate(obj, final_time, n_steps, k_sims, controller_step_skip)
             %INTEGRATE This method contains the loop in which the simulation
             % gets updated step by step
             assert(final_time > 0, 'Final time cannot be negative');
@@ -106,8 +111,11 @@ classdef simulator_class
             obj = obj.update_internal_forces_and_torques();
 
             obj = obj.get_external_forces();
+            for idx = 1:numel(obj.muscles)
+                obj.rod.external_forces = obj.rod.external_forces + obj.muscles{idx}.set_activation(obj.activations{idx});
+                o
+            end
 
-            obj.rod.external_forces(:, obj.rod.nElems+1) = obj.rod.external_forces(:, obj.rod.nElems+1);
             obj.rod.vel_vects = obj.rod.vel_vects .* obj.tx_damp_coeff;
             obj.rod.omega_vects = obj.rod.omega_vects .* (obj.rx_damp_coeff' .^ obj.rod.dilatations);
             obj.dyna_states.velocity_vecs = obj.rod.vel_vects;

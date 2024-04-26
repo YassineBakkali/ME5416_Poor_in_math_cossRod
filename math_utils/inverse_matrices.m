@@ -1,5 +1,4 @@
 function out_matrices = inverse_matrices(matrices)
-    % Determine the size of the matrix collection
     [rows, cols, n_matrices] = size(matrices);
 
     % Initialize the output matrix collection with the same size

@@ -1,17 +1,8 @@
 classdef ForwardBackwardAlgo
-    %FORWARDBACKWARDALGO Summary of this class goes here
-    %   Detailed explanation goes here
-
     properties
         rod
         params
         target
-        ds
-        s
-        s_pos
-        s_dir
-        s_sigma
-        s_kappa
         stepsize
         iter
         endflag
@@ -36,18 +27,10 @@ classdef ForwardBackwardAlgo
 
     methods
         function obj = ForwardBackwardAlgo(rod, params, muscles, targetPoint)
-        %FORWARDBACKWARDALGO Construct an instance of this class
-        %   Detailed explanation goes here
         obj.rod = rod;
         obj.target = targetPoint;
         obj.params = params;
-        
-        obj.ds = obj.rod.rest_lengths ./ sum(obj.rod.rest_lengths);
-        obj.s = [0, cumsum(obj.ds)];
-        obj.s_pos = obj.s;
-        obj.s_dir = (obj.s(1:end-1) + obj.s(2:end)) / 2; 
-        obj.s_sigma = obj.s_dir;  
-        obj.s_kappa = obj.s(2:end-1); 
+       
 
         % Costate definitions
 
@@ -78,8 +61,6 @@ classdef ForwardBackwardAlgo
         end
 
         function obj = runAlgo(obj, maxIter)
-        %METHOD1 Summary of this method goes here
-        %   Detailed explanation goes here
             for idx = 1:maxIter
                 obj = obj.update();
                 % disp(obj.rod.pos_vects(:,end));
@@ -116,15 +97,11 @@ classdef ForwardBackwardAlgo
         end
 
         function obj = check_activations_diff(obj)
-            % check_activations_difference
-            % Check if the norm of the difference between previous and current activations
-            % is less than a specified tolerance
             
             normVal = 0;  % Initialize norm to zero
             numActivations = numel(obj.activations);  % Determine the number of activations
             
             for i = 1:numActivations
-                % Compute the squared difference, average it, and accumulate
                 diff = obj.activations{i} - obj.prev_activations{i};
                 normVal = normVal + sum(diff.^2) / numel(obj.activations{i});
             end
@@ -137,8 +114,6 @@ classdef ForwardBackwardAlgo
         end
 
         function obj = update_activations(obj, target_activations)
-            % update_activations
-            % Update activations based on target activations and apply clipping
             
             numActivations = numel(obj.activations);  % Number of activations
             
@@ -152,8 +127,8 @@ classdef ForwardBackwardAlgo
         end
 
         function [obj, target_activations] = find_target_activations(obj)
-            numMuscles = numel(obj.muscles);  % Get the number of muscles
-            target_activations = cell(1, numMuscles);  % Preallocate a cell array for target activations
+            numMuscles = numel(obj.muscles); 
+            target_activations = cell(1, numMuscles);  
             
             for i = 1:numMuscles
                 obj.muscles{i} = obj.muscles{i}.set_activation(ones(size(obj.muscles{i}.activation)));  % Apply uniform activation
@@ -205,7 +180,6 @@ classdef ForwardBackwardAlgo
         end
 
         function obj = discrete_cost_gradient_condition(obj)
-            % Updates the discrete jump in internal force and couple based on cost gradients
             obj.internal_force_lab(:, end) = ...
                 obj.target.dis_grad_pose(:, end);
 
@@ -214,7 +188,6 @@ classdef ForwardBackwardAlgo
         end
         
         function obj = continuous_cost_gradient_condition(obj)
-            % Updates the derivatives of internal force and couple based on continuous cost gradients
             obj.internal_force_derivative(:, :) = ...
                 obj.target.cont_grad_pose;
             obj.internal_couple_derivative(:, :) = ...
@@ -244,7 +217,6 @@ classdef ForwardBackwardAlgo
 
             dilatation = vecnorm(temp);
             
-            % TODO: The next line is incomplete
             internal_force_lab_frame(:, end) = obj.internal_force_lab(:, end);
             
             % Average force derivatives
@@ -317,7 +289,7 @@ classdef ForwardBackwardAlgo
             out_pos = pos;
             out_pos(:, 2) = pos(:, 1);
         
-            % Update positions based on the director matrix and delta
+            
             for i = 1:3
                 for j = 1:3
                     out_pos(i, 2) = out_pos(i, 2) + dir(j, i) .* delta(j);
@@ -326,10 +298,10 @@ classdef ForwardBackwardAlgo
         end
 
         function out_dir = next_dir(obj, rot, dir)
-            rot_mat = rodrigues_roth(reshape(rot, [3, 1]), 1); % Check the function's existence or definition
+            rot_mat = rodrigues_roth(reshape(rot, [3, 1]), 1); 
             rot_mat = squeeze(rot_mat(:,:,1));
             out_dir = dir;
-            temp_dir = zeros(size(dir(:,:,1))); % Temporary variable to hold new values
+            temp_dir = zeros(size(dir(:,:,1))); 
         
             for i = 1:3
                 for j = 1:3

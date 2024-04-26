@@ -1,6 +1,6 @@
 classdef TargetPoint
-    %TARGETPOINT Summary of this class goes here
-    %   Detailed explanation goes here
+    %TARGETPOINT This class carries the location, direction and
+    % costs associated with a target
 
     properties
         cont_pose
@@ -19,20 +19,18 @@ classdef TargetPoint
 
     methods
         function obj = TargetPoint(pos, dir, cost_weight, target_cost_weight)
-        %TARGETPOINT Construct an instance of this class
-        %   Detailed explanation goes here
-        obj.cont_pose = 0;
-        obj.cont_dir = 0;
-        obj.dis_pose = 0;
-        obj.dis_dir = 0;
-        obj.cont_grad_pose = 0;
-        obj.cont_grad_dir = 0;
-        obj.dis_grad_pose = zeros(3,1);
-        obj.dis_grad_dir = zeros(3,1);
-        obj.cost_weight = cost_weight;
-        obj.target_cost_weight = target_cost_weight;
-        obj.pos = pos;
-        obj.dir = dir;
+            obj.cont_pose = 0;
+            obj.cont_dir = 0;
+            obj.dis_pose = 0;
+            obj.dis_dir = 0;
+            obj.cont_grad_pose = 0;
+            obj.cont_grad_dir = 0;
+            obj.dis_grad_pose = zeros(3,1);
+            obj.dis_grad_dir = zeros(3,1);
+            obj.cost_weight = cost_weight;
+            obj.target_cost_weight = target_cost_weight;
+            obj.pos = pos;
+            obj.dir = dir;
         end
 
         function obj = update_costs(obj, position, director)
@@ -51,60 +49,15 @@ classdef TargetPoint
         function obj = calculate_discrete_cost_gradient_wrt_director(obj, director)
             % calculate_discrete_cost_gradient_wrt_director.
             % Calculate the gradient of the cost function with respect to the director
-            dir_temp = director(:, :, end);
-            v = zeros(3, 1);
-            skew_symmetric_matrix = dir_temp * obj.dir' - obj.dir * dir_temp';
-            v(1) = skew_symmetric_matrix(2, 3);
-            v(2) = -skew_symmetric_matrix(1, 3);
-            v(3) = skew_symmetric_matrix(1, 2);
-            obj.dis_grad_dir(:, end) = ...
+                dir_temp = director(:, :, end);
+                v = zeros(3, 1);
+                skew_symmetric_matrix = dir_temp * obj.dir' - obj.dir * dir_temp';
+                v(1) = skew_symmetric_matrix(2, 3);
+                v(2) = -skew_symmetric_matrix(1, 3);
+                v(3) = skew_symmetric_matrix(1, 2);
+                obj.dis_grad_dir(:, end) = ...
                 obj.target_cost_weight.director .* (dir_temp' * v);
         end
 
-        function obj = add_cost_pose(obj, pose, dir)
-        %METHOD1 Summary of this method goes here
-        %   Detailed explanation goes here
-        obj.cont_pose = pose;
-        obj.cont_dir = dir;
-        end
-
-        function obj = add_dis_cost_pose(obj, pose, dir)
-        %METHOD1 Summary of this method goes here
-        %   Detailed explanation goes here
-        obj.dis_pose = pose;
-        obj.dis_dir = dir;
-        end
-    
-        function obj = add_grad_cost_pose(obj, pose, dir)
-        %METHOD1 Summary of this method goes here
-        %   Detailed explanation goes here
-        obj.cont_grad_pose = pose;
-        obj.cont_grad_dir = dir;
-        end
-
-        function obj = add_grad_dis_cost_pose(obj, pose, dir)
-        %METHOD1 Summary of this method goes here
-        %   Detailed explanation goes here
-        obj.dis_grad_pose = pose;
-        obj.dis_grad_dir = dir;
-        end
-
-        function obj = reset_cost(obj)
-        %METHOD1 Summary of this method goes here
-        %   Detailed explanation goes here
-        obj.cont_pose = obj.cont_pose.*0;
-        obj.cont_dir = obj.cont_dir.*0;
-        obj.dis_pose = obj.dis_pose.*0;
-        obj.dis_dir = obj.dis_dir.*0;
-        end
-
-        function obj = reset_cost_grad(obj)
-        %METHOD1 Summary of this method goes here
-        %   Detailed explanation goes here
-        obj.cont_grad_pose = obj.cont_pose.*0;
-        obj.cont_grad_dir = obj.cont_dir.*0;
-        obj.dis_grad_pose = obj.dis_pose.*0;
-        obj.dis_grad_dir = obj.dis_dir.*0;
-        end
     end
 end

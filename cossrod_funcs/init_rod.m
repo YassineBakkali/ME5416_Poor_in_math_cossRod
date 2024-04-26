@@ -15,7 +15,7 @@ function params = init_rod(...
     % Initialize position
     if isempty(position)
         position = zeros(3, nNodes);
-        % Straight open rod
+
         start = rodOriginPosition;
         endPos = start + direction * baseLength;
         for i = 1:3
@@ -33,22 +33,19 @@ function params = init_rod(...
 
     % Initialize directors
     if isempty(directors)
-        % Set the directors matrix with dimensions 3x3xnElements, assuming 3D space
         directors = zeros(3, 3, nElements);
         
         % Construct directors using tangents and normal
-        normalCollection = repmat(normal, 1, nElements);  % Replicating the normal vector across columns
-        % Check if rod normal and rod tangent are perpendicular to each other
-        % Compute dot product across all elements to ensure perpendicularity
-        dotProducts = sum(normalCollection .* tangents, 1);  % element-wise multiplication and sum over rows
+        normalCollection = repmat(normal, 1, nElements); 
+        dotProducts = sum(normalCollection .* tangents, 1);  
         assert(all(abs(dotProducts) < 1e-14), ...
             'Rod normal and tangent are not perpendicular to each other!');
         
         % Assign normal, cross product of tangents and normal, and tangents to the directors matrix
-        directors(1, :, :) = normalCollection;  % Assign normals to first row of each director slice
+        directors(1, :, :) = normalCollection;
         for k = 1:nElements
-            directors(2, :, k) = cross(tangents(:, k), normalCollection(:, k));  % Cross product
-            directors(3, :, k) = tangents(:, k);  % Tangents
+            directors(2, :, k) = cross(tangents(:, k), normalCollection(:, k));
+            directors(3, :, k) = tangents(:, k); 
         end
     end
 
@@ -80,7 +77,7 @@ function params = init_rod(...
 
     % Shear modulus computation, default handling
     if isempty(shearModulus)
-        poissonRatio = 0.5; % Default Poisson's ratio if shear modulus is not provided
+        poissonRatio = 0.5; 
         shearModulus = youngsModulus / (2 * (1 + poissonRatio));
     end
     
@@ -102,15 +99,12 @@ function params = init_rod(...
     volume = pi * radius.^2 .* restLengths;
     
     % Compute mass of elements
-    mass = zeros(1, nNodes); % Initialize mass array for all nodes
+    mass = zeros(1, nNodes); 
 
-    mass(1:end-1) = mass(1:end-1) + 0.5 * density .* volume; % Distribute mass to the beginning node of each element
-    mass(2:end) = mass(2:end) + 0.5 * density .* volume;    % Distribute mass to the ending node of each element
+    mass(1:end-1) = mass(1:end-1) + 0.5 * density .* volume; 
+    mass(2:end) = mass(2:end) + 0.5 * density .* volume;    
 
     
-    % Generate rest sigma and rest kappa, use user input if defined
-    % Set rest strains and curvature to be zero at start
-    % Initialize rest_sigma and rest_kappa based on provided input or default to zeros
     if isempty(restSigma)
         restSigma = zeros(3, nElements); % Assuming 3D (change dimensions as needed)
     else

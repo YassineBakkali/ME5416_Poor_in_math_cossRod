@@ -1,6 +1,6 @@
 classdef transverse_muscle
-    %LONGITUDINAL_ACTUATOR Summary of this class goes here
-    %   Detailed explanation goes here
+    %TRANSVERSE_MUSCLE Implementation of a transverse muscle
+    % actuator class
 
     properties
         nElems
@@ -28,8 +28,7 @@ classdef transverse_muscle
     methods
         function obj = transverse_muscle(nElems, ...
                 rest_area, max_stress)
-            %LONGITUDINAL_ACTUATOR Construct an instance of this class
-            %   Detailed explanation goes here
+
             obj.nElems = nElems;
             obj.ratio_pos =  zeros(3,nElems);
             obj.s = linspace(0, 1, nElems + 1);
@@ -39,7 +38,6 @@ classdef transverse_muscle
             obj.tangents = zeros(3,nElems);
             obj.strains = zeros(3,nElems);
             obj.pos = zeros(3,nElems);
-            % obj.ratio_pos = ratio_position;
             obj.rest_areas = rest_area;
             obj.areas = obj.rest_areas;
             obj.internal_forces = zeros(3, nElems);  % material frame
@@ -54,8 +52,7 @@ classdef transverse_muscle
         end
 
         function obj = update_muscle_kyn_shear(obj, rod)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
+
             % Calc muscle area
             obj.areas = obj.rest_areas ./ (rod.dilatations + 1e-14);
             % Calc muscle pos
