@@ -1,5 +1,5 @@
 classdef cossrod_class
-    % MyClass A simple example class in MATLAB
+    % MyClass Implements a cosserat rod class.
     properties
         nElems
         tangents 
@@ -7,6 +7,8 @@ classdef cossrod_class
         lengths 
         volumes
         masses
+        rho_medium
+        rho_material
         rest_lengths
         dilatations
         dilatation_rate
@@ -32,10 +34,6 @@ classdef cossrod_class
         omega_vects
         mass_second_moment_of_inertia
         inv_mass_second_moment_of_inertia
-    end
-    
-    properties (Access = private)
-        HiddenValue % Private property
     end
 
     methods
@@ -73,20 +71,18 @@ classdef cossrod_class
                 obj.masses = params.mass;
                 obj.external_torques = params.externalTorques;
                 obj.rest_voronoi_lengths = params.restVoronoiLengths;
+                obj.rho_material = params.density;              %new
+                obj.rho_medium = params.density_medium;         %new
 
-                obj.update_shearStretch(obj.dir_vects, obj.pos_vects,...
+                obj = obj.update_shearStretch(obj.dir_vects, obj.pos_vects,...
                 obj.volumes, obj.rest_lengths, obj.rest_voronoi_lengths);
 
-                obj.compute_bending_twist_strains(obj.dir_vects,...
+                obj = obj.compute_bending_twist_strains(obj.dir_vects,...
                     obj.rest_voronoi_lengths);
             end
         end
 
         function obj = compute_geom(obj, pos_vect, volumes)
-            %COMPUTE_GEOM Summary of this function goes here :
-            %   First, we must compute the difference in position between
-            %   all nodes. From there we can get the lengths between nodes
-            %   Then use these to get the tangents and updated radi at each node.
             
             pos_diffs =  diff(pos_vect,1,2);
             obj.lengths = vecnorm(pos_diffs) + 1e-14;
@@ -98,9 +94,7 @@ classdef cossrod_class
             
         
         function obj = compute_dilatations(obj, pos_vect, volumes, rest_lengths, rest_voronoi_lengths)
-            %COMPUTE_DILATATIONS Summary of this function goes here
-            %   Update the dilatations, voronoi lengths and voronoi dilatations
-            
+
             obj = obj.compute_geom(pos_vect, volumes);
             obj.dilatations = obj.lengths ./ rest_lengths;
             
@@ -111,8 +105,7 @@ classdef cossrod_class
 
         function obj = update_shearStretch(obj, dir_vects, pos_vect,...
             volumes, rest_lengths, rest_voronoi_lengths)
-            %UPDATE_SHEARSTRETCH Summary of this function goes here
-            %   Detailed explanation goes here
+
             obj = obj.compute_dilatations(pos_vect, volumes, rest_lengths, rest_voronoi_lengths);
             
             z_euler = [0; 0; 1];
@@ -135,8 +128,6 @@ classdef cossrod_class
             blocksize = size(obj.internal_stress, 2);
             cosserat_internal_stress = zeros(3, blocksize);
             
-        
-            % Compute Q^T * n_L / e (transpose directors and multiply by stresses)
             for i = 1:3
                 for j = 1:3
                     for k = 1:blocksize
@@ -146,11 +137,8 @@ classdef cossrod_class
                 end
             end
             
-            % Adjust for dilatation, which should be appropriately defined as either scalar or vector
             cosserat_internal_stress = cosserat_internal_stress ./ (obj.dilatations + 1e-14);
             
-            % Compute the internal forces using a kernel function
-            % Assuming difference_kernel_for_block_structure and ghost_elems_idx are defined appropriately
             obj.internal_forces = two_point_rule(cosserat_internal_stress, obj.nElems);
         end
         
@@ -185,7 +173,6 @@ classdef cossrod_class
             JOmegaUponE = batchMatVec(obj.mass_second_moment_of_inertia, obj.omega_vects) ./ (obj.dilatations + 1e-14);
             lagrangianTransport = cross(JOmegaUponE, obj.omega_vects,1);
         
-            % (J \omega_L / e^2) . (de/dt)
             unsteadyDilatation = JOmegaUponE .* obj.dilatation_rate ./ (obj.dilatations + 1e-14);
 
             obj.internal_torques = bend_twist_couple_2D + bend_twist_couple_3D ...
@@ -203,7 +190,6 @@ classdef cossrod_class
             blocksize_acc = size(obj.internal_forces, 2);
             blocksize_alpha = size(obj.internal_torques, 2);
             
-            % Calculate accelerations
             for i = 1:3
                 for k = 1:blocksize_acc
                     obj.acc_vects(i, k) = ...
@@ -211,10 +197,8 @@ classdef cossrod_class
                 end
             end
             
-            % Initialize alpha_collection to zero
             obj.ang_acc_vects = zeros(size(obj.ang_acc_vects));
             
-            % Calculate angular accelerations (alpha)
             for i = 1:3
                 for j = 1:3
                     for k = 1:blocksize_alpha
@@ -225,5 +209,31 @@ classdef cossrod_class
                 end
             end
         end
-    end
+
+        function trans_energy = get_translational_energy(obj)
+            vel_squared = sum(obj.vel_vects.^2, 1);
+            trans_energy = 0.5 * sum(obj.masses .* vel_squared); 
+        end
+
+        function rot_energy = get_rotational_energy(obj)
+             J_omega_upon_e = batchMatVec(obj.mass_second_moment_of_inertia, obj.omega_vects)...
+                 ./ obj.dilatations;
+             rot_energy = 0.5 * sum(sum(obj.omega_vects .* J_omega_upon_e, 1));
+        end
+
+        function bending_energy = get_bending_energy(obj)
+            kappa_diff = obj.kappa - obj.rest_kappa;
+            bending_intern_torques = batchMatVec(obj.bendMat, kappa_diff);
+            bending_energy = 0.5 * sum(sum(kappa_diff.* bending_intern_torques, 1)...
+                .* obj.rest_voronoi_lengths,2);
+        end
+
+        function bending_energy = get_shear_energy(obj)
+            sigma_diff = obj.sigma - obj.sigma_rest;
+            shear_intern_forces = batchMatVec(obj.shearMat, sigma_diff);
+            bending_energy = 0.5 * sum(sum(sigma_diff.* shear_intern_forces, 1)...
+                .* obj.rest_lengths,2);
+        end
+
+    end    
 end

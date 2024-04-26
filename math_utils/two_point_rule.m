@@ -8,7 +8,6 @@ function out = two_point_rule(vecs, ghost_idx)
 % Returns:
 %   result - 2D (dim, blocksize-1) array containing data with 'float' type.
 
-    [dim, blocksize] = size(vecs);
     % if ~isempty(ghost_idx)
     %     vecs(:,ghost_idx) = zeros(dim,1);
     % end
